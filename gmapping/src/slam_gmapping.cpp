@@ -34,29 +34,29 @@ written to a file using e.g.
 
 @section topic ROS topics
 
-Subscribes to (name/type):
+Subscribes to (name/type):  接受消息
 - @b "scan"/<a href="../../sensor_msgs/html/classstd__msgs_1_1LaserScan.html">sensor_msgs/LaserScan</a> : data from a laser range scanner 
 - @b "/tf": odometry from the robot
 
 
-Publishes to (name/type):
+Publishes to (name/type):    发布消息
 - @b "/tf"/tf/tfMessage: position relative to the map
 
 
-@section services
+@section services    保存地图服务
  - @b "~dynamic_map" : returns the map
 
 
 @section parameters ROS parameters
 
-Reads the following parameters from the parameter server
+Reads the following parameters from the parameter server   从参数服务器读取这些参数
 
-Parameters used by our GMapping wrapper:
+Parameters used by our GMapping wrapper:   
 
 - @b "~throttle_scans": @b [int] throw away every nth laser scan
-- @b "~base_frame": @b [string] the tf frame_id to use for the robot base pose
-- @b "~map_frame": @b [string] the tf frame_id where the robot pose on the map is published
-- @b "~odom_frame": @b [string] the tf frame_id from which odometry is read
+- @b "~base_frame": @b [string] the tf frame_id to use for the robot base pose   机器人坐标系
+- @b "~map_frame": @b [string] the tf frame_id where the robot pose on the map is published  地图坐标系 
+- @b "~odom_frame": @b [string] the tf frame_id from which odometry is read     //里程计坐标系
 - @b "~map_update_interval": @b [double] time in seconds between two recalculations of the map
 
 
@@ -76,10 +76,10 @@ Laser Parameters:
 - @b "~/minimumScore" @b [double] minimum score for considering the outcome of the scanmatching good. Can avoid 'jumping' pose estimates in large open spaces when using laser scanners with limited range (e.g. 5m). (0 = default. Scores go up to 600+, try 50 for example when experiencing 'jumping' estimate issues)
 
 Motion Model Parameters (all standard deviations of a gaussian noise model)
-- @b "~/srr" @b [double] linear noise component (x and y)
-- @b "~/stt" @b [double] angular noise component (theta)
-- @b "~/srt" @b [double] linear -> angular noise component
-- @b "~/str" @b [double] angular -> linear noise component
+- @b "~/srr" @b [double] linear noise component (x and y)   线速度噪声
+- @b "~/stt" @b [double] angular noise component (theta)   角速度噪声
+- @b "~/srt" @b [double] linear -> angular noise component   线速度 -> 角速度 噪声
+- @b "~/str" @b [double] angular -> linear noise component   角速度 -> 线速度  噪声
 
 Others:
 - @b "~/linearUpdate" @b [double] the robot only processes new measurements if the robot has moved at least this many meters
@@ -88,13 +88,13 @@ Others:
 - @b "~/resampleThreshold" @b [double] threshold at which the particles get resampled. Higher means more frequent resampling.
 - @b "~/particles" @b [int] (fixed) number of particles. Each particle represents a possible trajectory that the robot has traveled
 
-Likelihood sampling (used in scan matching)
+Likelihood sampling (used in scan matching)   似然采样（*是不是有错*）
 - @b "~/llsamplerange" @b [double] linear range
-- @b "~/lasamplerange" @b [double] linear step size
+- @b "~/lasamplerange" @b [double] linear step size  
 - @b "~/llsamplestep" @b [double] linear range
 - @b "~/lasamplestep" @b [double] angular step size
 
-Initial map dimensions and resolution:
+Initial map dimensions and resolution:   地图尺寸和分辨率
 - @b "~/xmin" @b [double] minimum x position in the map [m]
 - @b "~/ymin" @b [double] minimum y position in the map [m]
 - @b "~/xmax" @b [double] maximum x position in the map [m]
