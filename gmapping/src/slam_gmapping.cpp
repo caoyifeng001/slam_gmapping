@@ -534,6 +534,8 @@ SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan)
   return true;
 }
 
+
+//这个函数转到pf的核心processScan中去
 bool
 SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoint& gmap_pose)
 {
@@ -596,6 +598,7 @@ SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoin
 void
 SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
+  //ROS_INFO("get new laser data");
   laser_count_++;
   if ((laser_count_ % throttle_scans_) != 0)
     return;
@@ -603,7 +606,7 @@ SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
   static ros::Time last_map_update(0,0);
 
   // We can't initialize the mapper until we've got the first scan
-  if(!got_first_scan_)
+  if(!got_first_scan_)  //第一帧初始化
   {
     if(!initMapper(*scan))
       return;
@@ -659,6 +662,11 @@ SlamGMapping::computePoseEntropy()
   return -entropy;
 }
 
+
+/*
+先得到最优的粒子（用权重和 weightSum判断 ），得到机器人最优轨迹
+地图膨胀更新
+*/
 void
 SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
 {
@@ -672,7 +680,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
   matcher.setlaserMaxRange(maxRange_);
   matcher.setusableRange(maxUrange_);
   matcher.setgenerateMap(true);
-
+  //选取最优的粒子，根据权重和weightSum 判断（最大）
   GMapping::GridSlamProcessor::Particle best =
           gsp_->getParticles()[gsp_->getBestParticleIndex()];
   std_msgs::Float64 entropy;
@@ -699,6 +707,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
                                 delta_);
 
   ROS_DEBUG("Trajectory tree:");
+  //得到机器人轨迹
   for(GMapping::GridSlamProcessor::TNode* n = best.node;
       n;
       n = n->parent)
@@ -712,6 +721,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
       ROS_DEBUG("Reading is NULL");
       continue;
     }
+    //重新计算栅格单元的概率
     matcher.invalidateActiveArea();
     matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
     matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
@@ -738,7 +748,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
 
     ROS_DEBUG("map origin: (%f, %f)", map_.map.info.origin.position.x, map_.map.info.origin.position.y);
   }
-
+ //确定地图的未知区域、自由区域、障碍
   for(int x=0; x < smap.getMapSizeX(); x++)
   {
     for(int y=0; y < smap.getMapSizeY(); y++)

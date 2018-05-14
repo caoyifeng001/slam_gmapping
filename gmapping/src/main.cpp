@@ -24,7 +24,7 @@ int
 main(int argc, char** argv)
 {
   ros::init(argc, argv, "slam_gmapping");
-
+  ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);   //设置日志级别
   SlamGMapping gn;
   gn.startLiveSlam();
   ros::spin();
