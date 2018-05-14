@@ -258,12 +258,12 @@ void SlamGMapping::startLiveSlam()
   entropy_publisher_ = private_nh_.advertise<std_msgs::Float64>("entropy", 1, true);
   sst_ = node_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   sstm_ = node_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
-  ss_ = node_.advertiseService("dynamic_map", &SlamGMapping::mapCallback, this);
+  ss_ = node_.advertiseService("dynamic_map", &SlamGMapping::mapCallback, this);   //保存地图？
   scan_filter_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(node_, "scan", 5);
   scan_filter_ = new tf::MessageFilter<sensor_msgs::LaserScan>(*scan_filter_sub_, tf_, odom_frame_, 5);
-  scan_filter_->registerCallback(boost::bind(&SlamGMapping::laserCallback, this, _1));
-
-  transform_thread_ = new boost::thread(boost::bind(&SlamGMapping::publishLoop, this, transform_publish_period_));
+  scan_filter_->registerCallback(boost::bind(&SlamGMapping::laserCallback, this, _1));  //laserCallback 回掉函数
+ 
+  transform_thread_ = new boost::thread(boost::bind(&SlamGMapping::publishLoop, this, transform_publish_period_));  //publishLoop回掉函数
 }
 
 void SlamGMapping::startReplay(const std::string & bag_fname, std::string scan_topic)
