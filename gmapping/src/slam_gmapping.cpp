@@ -35,7 +35,9 @@ written to a file using e.g.
 @section topic ROS topics
 
 Subscribes to (name/type):  接受消息
+从激光扫描创建地图
 - @b "scan"/<a href="../../sensor_msgs/html/classstd__msgs_1_1LaserScan.html">sensor_msgs/LaserScan</a> : data from a laser range scanner 
+转换需要涉及激光坐标系，基座坐标系和里程计坐标系。
 - @b "/tf": odometry from the robot
 
 
@@ -53,54 +55,58 @@ Reads the following parameters from the parameter server   从参数服务器读
 
 Parameters used by our GMapping wrapper:   
 
-- @b "~throttle_scans": @b [int] throw away every nth laser scan
+- @b "~throttle_scans": @b [int] throw away every nth laser scan  激光雷达每扫描一周跳过多少扫描。
 - @b "~base_frame": @b [string] the tf frame_id to use for the robot base pose   机器人坐标系
 - @b "~map_frame": @b [string] the tf frame_id where the robot pose on the map is published  地图坐标系 
 - @b "~odom_frame": @b [string] the tf frame_id from which odometry is read     //里程计坐标系
-- @b "~map_update_interval": @b [double] time in seconds between two recalculations of the map
+- @b "~map_update_interval": @b [double] time in seconds between two recalculations of the map  地图更新的时间间隔(单位：seconds)。更新间隔越小，计算负荷越大。
 
 
 Parameters used by GMapping itself:
 
 Laser Parameters:
-- @b "~/maxRange" @b [double] maximum range of the laser scans. Rays beyond this range get discarded completely. (default: maximum laser range minus 1 cm, as received in the the first LaserScan message)
-- @b "~/maxUrange" @b [double] maximum range of the laser scanner that is used for map building (default: same as maxRange)
-- @b "~/sigma" @b [double] standard deviation for the scan matching process (cell)
-- @b "~/kernelSize" @b [int] search window for the scan matching process
-- @b "~/lstep" @b [double] initial search step for scan matching (linear)
-- @b "~/astep" @b [double] initial search step for scan matching (angular)
-- @b "~/iterations" @b [int] number of refinement steps in the scan matching. The final "precision" for the match is lstep*2^(-iterations) or astep*2^(-iterations), respectively.
-- @b "~/lsigma" @b [double] standard deviation for the scan matching process (single laser beam)
-- @b "~/ogain" @b [double] gain for smoothing the likelihood
-- @b "~/lskip" @b [int] take only every (n+1)th laser ray for computing a match (0 = take all rays)
-- @b "~/minimumScore" @b [double] minimum score for considering the outcome of the scanmatching good. Can avoid 'jumping' pose estimates in large open spaces when using laser scanners with limited range (e.g. 5m). (0 = default. Scores go up to 600+, try 50 for example when experiencing 'jumping' estimate issues)
+- @b "~/maxRange" @b [double] maximum range of the laser scans. Rays beyond this range get discarded completely. (default: maximum laser range minus 1 cm, as received in the the first LaserScan message)    传感器的最大距离。
+- @b "~/maxUrange" @b [double] maximum range of the laser scanner that is used for map building (default: same as maxRange)    激光雷达最大可用距离。光束被裁减成这个值。
+- @b "~/sigma" @b [double] standard deviation for the scan matching process (cell)      用作结束点匹配。
+- @b "~/kernelSize" @b [int] search window for the scan matching process     在内核内寻找一个对应。
+- @b "~/lstep" @b [double] initial search step for scan matching (linear)   平移的最优步长。
+- @b "~/astep" @b [double] initial search step for scan matching (angular)   旋转的最优步长。
+- @b "~/iterations" @b [int] number of refinement steps in the scan matching. The final "precision" for the match is lstep*2^(-iterations) or astep*2^(-iterations), respectively.     扫描匹配的迭代次数。
+- @b "~/lsigma" @b [double] standard deviation for the scan matching process (single laser beam)   波束的sigma，用来计算似然估计。 
+- @b "~/ogain" @b [double] gain for smoothing the likelihood    评估似然的增益，用来平滑重采样的影响。
+- @b "~/lskip" @b [int] take only every (n+1)th laser ray for computing a match (0 = take all rays)     每次扫描跳过的波束。
+- @b "~/minimumScore" @b [double] minimum score for considering the outcome of the scanmatching good. Can avoid 'jumping' pose estimates in large open spaces when using laser scanners with limited range (e.g. 5m). (0 = default. Scores go up to 600+, try 50 for example when experiencing 'jumping'  评价扫描匹配良好结果的最低分数 estimate issues)
 
 Motion Model Parameters (all standard deviations of a gaussian noise model)
-- @b "~/srr" @b [double] linear noise component (x and y)   线速度噪声
-- @b "~/stt" @b [double] angular noise component (theta)   角速度噪声
-- @b "~/srt" @b [double] linear -> angular noise component   线速度 -> 角速度 噪声
-- @b "~/str" @b [double] angular -> linear noise component   角速度 -> 线速度  噪声
+- @b "~/srr" @b [double] linear noise component (x and y)  平移函数在平移时的里程计误差 (rho/rho)。
+- @b "~/stt" @b [double] angular noise component (theta)     旋转函数在旋转时的里程计误差 (theta/theta)
+- @b "~/srt" @b [double] linear -> angular noise component    旋转函数在平移时的里程计误差 (rho/theta)
+- @b "~/str" @b [double] angular -> linear noise component    平移函数在旋转时的里程计误差 (theta/rho)
 
 Others:
-- @b "~/linearUpdate" @b [double] the robot only processes new measurements if the robot has moved at least this many meters
-- @b "~/angularUpdate" @b [double] the robot only processes new measurements if the robot has turned at least this many rads
+- @b "~/linearUpdate" @b [double] the robot only processes new measurements if the robot has moved at least this many meters   机器人平移这么远，处理一次扫描。
+- @b "~/angularUpdate" @b [double] the robot only processes new measurements if the robot has turned at least this many rads     机器人旋转这个角度，处理一次扫描。
 
-- @b "~/resampleThreshold" @b [double] threshold at which the particles get resampled. Higher means more frequent resampling.
-- @b "~/particles" @b [int] (fixed) number of particles. Each particle represents a possible trajectory that the robot has traveled
+- @b "~/resampleThreshold" @b [double] threshold at which the particles get resampled. Higher means more frequent resampling.      如果上一次扫描处理比更新时间长，处理一次扫描。值小于0，将会关闭更新相关    的时间。
+- @b "~/particles" @b [int] (fixed) number of particles. Each particle represents a possible trajectory that the robot has traveled   粒子数
 
 Likelihood sampling (used in scan matching)   似然采样（*是不是有错*）
-- @b "~/llsamplerange" @b [double] linear range
-- @b "~/lasamplerange" @b [double] linear step size  
-- @b "~/llsamplestep" @b [double] linear range
-- @b "~/lasamplestep" @b [double] angular step size
+- @b "~/llsamplerange" @b [double] linear range    似然的平移采样距离。
+- @b "~/lasamplerange" @b [double] linear step size   似然的角度采样距离。
+- @b "~/llsamplestep" @b [double] linear range   似然的平移采样步长。
+- @b "~/lasamplestep" @b [double] angular step size   似然的角度采样步长。
 
-Initial map dimensions and resolution:   地图尺寸和分辨率
+Initial map dimensions and resolution:   初始化地图尺寸和分辨率
 - @b "~/xmin" @b [double] minimum x position in the map [m]
 - @b "~/ymin" @b [double] minimum y position in the map [m]
 - @b "~/xmax" @b [double] maximum x position in the map [m]
 - @b "~/ymax" @b [double] maximum y position in the map [m]
 - @b "~/delta" @b [double] size of one pixel [m]
 
+
+ occ_thresh (float, default: 0.25)   Gmapping占用值的阈值。有大一些的占用值的单元格，被视为占用。
+ transform_publish_period (float, default: 0.05)   转换发布间隔，单位：seconds
+   
 */
 
 
@@ -374,7 +380,8 @@ SlamGMapping::getOdomPose(GMapping::OrientedPoint& gmap_pose, const ros::Time& t
   tf::Stamped<tf::Transform> odom_pose;
   try
   {
-    tf_.transformPose(odom_frame_, centered_laser_pose_, odom_pose);
+    // 电机里程计 odom_frame_ = "odom" tf坐标系 ， centered_laser_pose_ 时间 ，  odom_pose 位置 
+    tf_.transformPose(odom_frame_, centered_laser_pose_, odom_pose);  
   }
   catch(tf::TransformException e)
   {
@@ -598,7 +605,7 @@ SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoin
 void
 SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
-  //ROS_INFO("get new laser data");
+  
   laser_count_++;
   if ((laser_count_ % throttle_scans_) != 0)
     return;
